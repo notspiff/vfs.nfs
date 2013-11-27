@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon
+  id="vfs.nfs"
+  version="1.0.0"
+  name="NFS support"
+  provider-name="spiff">
+  <requires>
+    <import addon="xbmc.vfs" version="1.0.0"/>
+  </requires>
+  <extension
+    point="xbmc.vfs"
+    protocols="nfs"
+    files="true"
+    directories="true"
+    library_linux="vfs.nfs.so"/>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en">NFS support</summary>
+    <description lang="en">NFS support</description>
+    <platform>all</platform>
+  </extension>
+</addon>
