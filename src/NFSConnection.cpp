@@ -281,7 +281,7 @@ bool CNFSConnection::Connect(VFSURL* url, std::string& relativePath)
 
       if(nfsRet != 0) 
       {
-        XBMC->Log(ADDON::LOG_ERROR,"NFS: Failed to mount nfs share: %s (%s)\n", exportPath.c_str(), nfs_get_error(m_pNfsContext));
+        XBMC->Log(ADDON::LOG_ERROR,"NFS: Failed to mount nfs share: %s %s (%s)\n", m_resolvedHostName.c_str(), exportPath.c_str(), nfs_get_error(m_pNfsContext));
         destroyContext(std::string(url->hostname) + exportPath);
         return 0;
       }
