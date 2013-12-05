@@ -790,8 +790,7 @@ bool Delete(VFSURL* url)
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   std::string filename;
   
-  if(!CNFSConnection::Get().Connect(url, hostname, filename2, port,
-                                    options, username, password, filename))
+  if(!CNFSConnection::Get().Connect(url, filename))
   {
     return false;
   }
