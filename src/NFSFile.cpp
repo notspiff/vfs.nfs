@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <map>
 #include <sstream>
+#include <iostream>
 
 extern "C"
 {
