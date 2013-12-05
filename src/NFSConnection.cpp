@@ -259,7 +259,7 @@ bool CNFSConnection::Connect(VFSURL* url, std::string& relativePath)
   int nfsRet = 0;
   std::string exportPath;
 
-  resolveHost(hostname);
+  resolveHost(url->hostname);
   ret = splitUrlIntoExportAndPath(url->hostname, url->filename, exportPath, relativePath);
   
   if( (ret && (exportPath != m_exportPath  || 
