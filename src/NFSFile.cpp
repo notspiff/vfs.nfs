@@ -88,6 +88,7 @@ static bool GetServerList(std::vector<VFSDirEntry>& items)
       path += '/'; 
     pItem.path = strdup(path.c_str());
     pItem.label = strdup(currentExport.c_str());
+    pItem.title = NULL;
     pItem.mtime=0;
 
     pItem.folder = true;
@@ -544,7 +545,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
     //connect has failed - so try to get the exported filesystms if no path is given to the url
     if (myStrPath == "/")
     {
-      if(strcmp(url->hostname, "") == 0)
+      if(!strlen(url->hostname))
       {
         GetServerList(*itms);
       }
