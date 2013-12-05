@@ -662,21 +662,20 @@ void FreeDirectory(void* items)
   delete &ctx;
 }
 
-bool CreateDirectory(const char* url, const char* hostname,
-                     const char* filename, unsigned int port,
-                     const char* options, const char* username,
-                     const char* password)
+bool CreateDirectory(VFSURL* url)
 {
   int ret = 0;
   bool success=true;
   
   PLATFORM::CLockObject lock(CNFSConnection::Get());
-  std::string folderName(filename);
+  std::string folderName(url->filename);
   if (folderName[folderName.size()-1] == '/')
+  {
     folderName.erase(folderName.end()-1);
+    url->filename = folderName.c_str();
+  }
   
-  if(!CNFSConnection::Get().Connect(url, hostname, folderName.c_str(),
-                                    port, options, username, password, folderName))
+  if(!CNFSConnection::Get().Connect(url, folderName))
   {
     return false;
   }
@@ -691,20 +690,19 @@ bool CreateDirectory(const char* url, const char* hostname,
   return success;
 }
 
-bool RemoveDirectory(const char* url, const char* hostname,
-                     const char* filename, unsigned int port,
-                     const char* options, const char* username,
-                     const char* password)
+bool RemoveDirectory(VFSURL* url)
 {
   int ret = 0;
 
   PLATFORM::CLockObject lock(CNFSConnection::Get());
-  std::string folderName(filename);
+  std::string folderName(url->filename);
   if (folderName[folderName.size()-1] == '/')
+  {
     folderName.erase(folderName.end()-1);
+    url->filename = folderName.c_str();
+  }
   
-  if(!CNFSConnection::Get().Connect(url, hostname, folderName.c_str(),
-                                    port, options, username, password, folderName))
+  if(!CNFSConnection::Get().Connect(url, folderName))
   {
     return false;
   }
@@ -786,10 +784,7 @@ int Write(void* context, const void* lpBuf, int64_t uiBufSize)
   return numberOfBytesWritten;
 }
 
-bool Delete(const char* url, const char* hostname,
-            const char* filename2, unsigned int port,
-            const char* options, const char* username,
-            const char* password)
+bool Delete(VFSURL* url)
 {
   int ret = 0;
   PLATFORM::CLockObject lock(CNFSConnection::Get());
@@ -812,30 +807,22 @@ bool Delete(const char* url, const char* hostname,
   return (ret == 0);
 }
 
-bool Rename(const char* url, const char* hostname,
-            const char* filename, unsigned int port,
-            const char* options, const char* username,
-            const char* password,
-            const char* url2, const char* hostname2,
-            const char* filename2, unsigned int port2,
-            const char* options2, const char* username2,
-            const char* password2)
+bool Rename(VFSURL* url, VFSURL* url2)
 {
   int ret = 0;
   PLATFORM::CLockObject lock(CNFSConnection::Get());
-  std::string strFile = "";
+  std::string strFile;
   
-  if(!CNFSConnection::Get().Connect(url, hostname, filename, port,
-                                    options, username, password ,strFile))
+  if(!CNFSConnection::Get().Connect(url, strFile))
   {
     return false;
   }
   
   std::string strFileNew;
   std::string strDummy;
-  CNFSConnection::Get().splitUrlIntoExportAndPath(hostname2, filename2, strDummy, strFileNew);
+  CNFSConnection::Get().splitUrlIntoExportAndPath(url2->hostname, url2->filename, strDummy, strFileNew);
   
-  ret = nfs_rename(CNFSConnection::Get().GetNfsContext() , strFile.c_str(), strFileNew.c_str());
+  ret = nfs_rename(CNFSConnection::Get().GetNfsContext(), strFile.c_str(), strFileNew.c_str());
   
   if(ret != 0)
   {
@@ -846,22 +833,18 @@ bool Rename(const char* url, const char* hostname,
   return (ret == 0);
 }
 
-void* OpenForWrite(const char* url, const char* hostname,
-                   const char* filename2, unsigned int port,
-                   const char* options, const char* username,
-                   const char* password, bool bOverWrite)
+void* OpenForWrite(VFSURL* url, bool bOverWrite)
 { 
   int ret = 0;
   // we can't open files like nfs://file.f or nfs://server/file.f
   // if a file matches the if below return false, it can't exist on a nfs share.
-  if (!IsValidFile(filename2))
+  if (!IsValidFile(url->filename))
     return NULL;
   
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   std::string filename;
   
-  if(!CNFSConnection::Get().Connect(url, hostname, filename2, port,
-                                    options, username, password, filename))
+  if(!CNFSConnection::Get().Connect(url, filename))
   {
     return NULL;
   }
@@ -900,7 +883,7 @@ void* OpenForWrite(const char* url, const char* hostname,
   {
     struct __stat64 tmpBuffer;
 
-    if( Stat(url, hostname, filename2, port, options, username, password, &tmpBuffer) )
+    if( Stat(url, &tmpBuffer) )
     {
       Close(result);
       return NULL;
@@ -917,11 +900,7 @@ void* OpenForWrite(const char* url, const char* hostname,
   return result;
 }
 
-void* ContainsFiles(const char* url, const char* hostname,
-                    const char* filename2, unsigned int port,
-                    const char* options, const char* username,
-                    const char* password,
-                    VFSDirEntry** items, int* num_items)
+void* ContainsFiles(VFSURL* url, VFSDirEntry** items, int* num_items)
 {
   return NULL;
 }
