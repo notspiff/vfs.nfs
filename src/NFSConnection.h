@@ -28,6 +28,8 @@
 
 #include <xbmc/threads/mutex.h>
 
+#include "xbmc/xbmc_vfs_types.h"
+
 class CNFSConnection : public PLATFORM::CMutex
 {     
 public:
