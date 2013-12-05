@@ -544,7 +544,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   {
     std::cout << "conn fail" << std::endl;
     //connect has failed - so try to get the exported filesystms if no path is given to the url
-    if (!strlen(url.sharename))
+    if (!strlen(url->sharename))
     {
       if(!strlen(url->hostname))
       {
