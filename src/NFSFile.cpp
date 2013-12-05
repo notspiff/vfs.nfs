@@ -50,7 +50,7 @@ static bool GetDirectoryFromExportList(const std::string& strPath, std::vector<V
   for(it=exportList.begin();it!=exportList.end();it++)
   {
     std::string currentExport(*it);     
-    if (nonConstStrPath.empty() && nonConstStrPath[nonConstStrPath.size()-1] == '/')
+    if (!nonConstStrPath.empty() && nonConstStrPath[nonConstStrPath.size()-1] == '/')
       nonConstStrPath.erase(nonConstStrPath.end()-1);
            
     VFSDirEntry pItem;
@@ -535,7 +535,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   int ret = 0;
   uint64_t fileTime, localTime;    
   std::string strDirName;
-  std::string myStrPath(url->filename);
+  std::string myStrPath(url->url);
   std::vector<VFSDirEntry>* itms = new std::vector<VFSDirEntry>;
   if (myStrPath[myStrPath.size()-1] != '/')
   {
