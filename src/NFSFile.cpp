@@ -55,7 +55,7 @@ static bool GetDirectoryFromExportList(const std::string& strPath, std::vector<V
            
     VFSDirEntry pItem;
     pItem.label = strdup(currentExport.c_str());
-    std::string path(nonConstStrPath + currentExport);
+    std::string path(std::string("nfs://")+nonConstStrPath + currentExport);
     if (path[path.size()-1] != '/')
       path += '/'; 
     pItem.path = strdup(path.c_str());
