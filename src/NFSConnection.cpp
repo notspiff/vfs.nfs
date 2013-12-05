@@ -424,7 +424,7 @@ int CNFSConnection::stat(VFSURL* url, struct stat *statbuff)
       }
       
       nfs_destroy_context(pTmpContext);
-      XBMC->Log(ADDON::LOG_DEBUG,"NFS: Connected to server %s and export %s in tmpContext\n", url->hostname.c_str(), exportPath.c_str());
+      XBMC->Log(ADDON::LOG_DEBUG,"NFS: Connected to server %s and export %s in tmpContext\n", url->hostname, exportPath.c_str());
     }
   }
 
