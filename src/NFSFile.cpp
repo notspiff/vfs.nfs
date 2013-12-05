@@ -543,7 +543,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
     //connect has failed - so try to get the exported filesystms if no path is given to the url
     if (myStrPath == "/")
     {
-      if(strcmp(hostname, "") == 0)
+      if(strcmp(url->hostname, "") == 0)
       {
         GetServerList(*itms);
       }
@@ -573,7 +573,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   while((nfsdirent = nfs_readdir(CNFSConnection::Get().GetNfsContext(), nfsdir)) != NULL) 
   {
     std::string strName = nfsdirent->name;
-    std::string path(url + strName);    
+    std::string path(url->url + strName);    
     int64_t iSize = 0;
     bool bIsDir = false;
     int64_t lTimeDate = 0;
