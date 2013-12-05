@@ -537,7 +537,10 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   std::string myStrPath(url->filename);
   std::vector<VFSDirEntry>* itms = new std::vector<VFSDirEntry>;
   if (myStrPath[myStrPath.size()-1] != '/')
+  {
     myStrPath += '/';
+    url->filename = myStrPath.c_str();
+  }
   if(!CNFSConnection::Get().Connect(url, strDirName))
   {
     //connect has failed - so try to get the exported filesystms if no path is given to the url
