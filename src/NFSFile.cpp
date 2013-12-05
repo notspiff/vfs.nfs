@@ -564,6 +564,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   struct nfsdir *nfsdir = NULL;
   struct nfsdirent *nfsdirent = NULL;
 
+  std::cout << "yo " << strDirName << std::endl;
   ret = nfs_opendir(CNFSConnection::Get().GetNfsContext(), strDirName.c_str(), &nfsdir);
 
   if(ret != 0)
