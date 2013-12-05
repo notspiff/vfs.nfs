@@ -252,28 +252,21 @@ bool CNFSConnection::splitUrlIntoExportAndPath(const std::string& hostname,
   return ret;
 }
 
-bool CNFSConnection::Connect(const std::string& url,
-                             const std::string& hostname,
-                             const std::string& filename,
-                             unsigned int port,
-                             const std::string& options,
-                             const std::string& username,
-                             const std::string& password,
-                             std::string& relativePath)
+bool CNFSConnection::Connect(VFSURL* url, std::string& relativePath)
 {
   PLATFORM::CLockObject lock(*this);
   bool ret = false;
   int nfsRet = 0;
-  std::string exportPath = "";
+  std::string exportPath;
 
   resolveHost(hostname);
-  ret = splitUrlIntoExportAndPath(hostname, filename, exportPath, relativePath);
+  ret = splitUrlIntoExportAndPath(url->hostname, url->filename, exportPath, relativePath);
   
   if( (ret && (exportPath != m_exportPath  || 
-      m_hostName != hostname))    ||
+      m_hostName != url->hostname))    ||
       (PLATFORM::GetTimeMs() - m_lastAccessedTime) > CONTEXT_TIMEOUT )
   {
-    int contextRet = getContextForExport(std::string(hostname) + exportPath);
+    int contextRet = getContextForExport(std::string(url->hostname) + exportPath);
     
     if(contextRet == CONTEXT_INVALID)//we need a new context because sharename or hostname has changed
     {
@@ -289,20 +282,20 @@ bool CNFSConnection::Connect(const std::string& url,
       if(nfsRet != 0) 
       {
         XBMC->Log(ADDON::LOG_ERROR,"NFS: Failed to mount nfs share: %s (%s)\n", exportPath.c_str(), nfs_get_error(m_pNfsContext));
-        destroyContext(std::string(hostname) + exportPath);
+        destroyContext(std::string(url->hostname) + exportPath);
         return false;
       }
-      XBMC->Log(ADDON::LOG_DEBUG,"NFS: Connected to server %s and export %s\n", hostname.c_str(), exportPath.c_str());
+      XBMC->Log(ADDON::LOG_DEBUG,"NFS: Connected to server %s and export %s\n", url->hostname, exportPath.c_str());
     }
     m_exportPath = exportPath;
-    m_hostName = hostname;
+    m_hostName = url->hostname;
     //read chunksize only works after mount
     m_readChunkSize = nfs_get_readmax(m_pNfsContext);
     m_writeChunkSize =nfs_get_writemax(m_pNfsContext);
 
     if(contextRet == CONTEXT_NEW)
     {
-      XBMC->Log(ADDON::LOG_DEBUG,"NFS: chunks: r/w %i/%i\n", (int)m_readChunkSize,(int)m_writeChunkSize);          
+      XBMC->Log(ADDON::LOG_DEBUG,"NFS: chunks: r/w %i/%i\n", (int)m_readChunkSize,(int)m_writeChunkSize);
     }
   }
   return ret; 

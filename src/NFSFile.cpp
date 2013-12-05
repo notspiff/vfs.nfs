@@ -100,15 +100,13 @@ static bool GetServerList(std::vector<VFSDirEntry>& items)
   return ret;
 }
 
-static bool ResolveSymlink(const std::string& url, const std::string& hostname,
-                           const std::string& filename, unsigned int port,
-                           const std::string& options, const std::string& username,
-                           const std::string& password, struct nfsdirent *dirent, std::string& resolvedUrl)
+static bool ResolveSymlink(VFSURL* url, struct nfsdirent *dirent,
+                           std::string& resolvedUrl)
 {
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   int ret = 0;  
   bool retVal = true;
-  std::string fullpath = filename;
+  std::string fullpath = url->filename;
   char resolvedLink[MAX_PATH];
   
   if (fullpath[fullpath.size()-1] != '/')
@@ -120,7 +118,7 @@ static bool ResolveSymlink(const std::string& url, const std::string& hostname,
   if(ret == 0)
   {
     struct stat tmpBuffer = {0};      
-    fullpath = filename;
+    fullpath = url->filename;
     if (fullpath[fullpath.size()-1] != '/')
       fullpath += '/'; 
     fullpath.append(resolvedLink);
@@ -135,8 +133,7 @@ static bool ResolveSymlink(const std::string& url, const std::string& hostname,
       //without destroying something...
       fullpath = resolvedLink;
       resolvedUrl = fullpath;            
-      ret = CNFSConnection::Get().stat(url, hostname, resolvedLink,
-                                       port, options, username, password, &tmpBuffer);
+      ret = CNFSConnection::Get().stat(url, &tmpBuffer);
     }
     else
     {
@@ -283,27 +280,23 @@ static bool IsValidFile(const std::string& strFileName)
   return true;
 }
 
-void* Open(const char* url, const char* hostname,
-           const char* filename2, unsigned int port,
-           const char* options, const char* username,
-           const char* password)
+void* Open(VFSURL* url)
 {
   CNFSConnection::Get().AddActiveConnection();
   int ret = 0;
   // we can't open files like nfs://file.f or nfs://server/file.f
   // if a file matches the if below return false, it can't exist on a nfs share.
-  if (!IsValidFile(filename2))
+  if (!IsValidFile(url->filename))
   {
-    XBMC->Log(ADDON::LOG_NOTICE,"NFS: Bad URL : '%s'",filename2);
+    XBMC->Log(ADDON::LOG_NOTICE,"NFS: Bad URL : '%s'", url->filename);
     return NULL;
   }
   
-  std::string filename = "";
+  std::string filename;
 
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   
-  if(!CNFSConnection::Get().Connect(url, hostname, filename2, port,
-                                    options, username, password, filename))
+  if(!CNFSConnection::Get().Connect(url, filename))
   {
     return NULL;
   }
@@ -323,11 +316,11 @@ void* Open(const char* url, const char* hostname,
   } 
   
   XBMC->Log(ADDON::LOG_DEBUG,"CNFSFile::Open - opened %s", filename.c_str());
-  result->filename = filename2;
+  result->filename = url->filename;
   
   struct __stat64 tmpBuffer;
 
-  if( Stat(url, hostname, filename2, port, options, username, password, &tmpBuffer) )
+  if( Stat(url, &tmpBuffer) )
   {
     Close(result);
     return NULL;
@@ -444,26 +437,18 @@ int64_t Seek(void* context, int64_t iFilePosition, int iWhence)
   return (int64_t)offset;
 }
 
-bool Exists(const char* url, const char* hostname,
-            const char* filename, unsigned int port,
-            const char* options, const char* username,
-            const char* password)
+bool Exists(VFSURL* url)
 {
-  return Stat(url, hostname, filename, port,
-              options, username, password, NULL) == 0;
+  return Stat(url, NULL) == 0;
 }
 
-int Stat(const char* url, const char* hostname,
-         const char* filename2, unsigned int port,
-         const char* options, const char* username,
-         const char* password, struct __stat64* buffer)
+int Stat(VFSURL* url, struct __stat64* buffer)
 {
   int ret = 0;
   PLATFORM::CLockObject lock(CNFSConnection::Get());
-  std::string filename = "";
+  std::string filename;
   
-  if(!CNFSConnection::Get().Connect(url, hostname, filename2,
-                                    port, options, username, password, filename))
+  if(!CNFSConnection::Get().Connect(url, filename))
   {
     return -1;
   }
@@ -475,7 +460,7 @@ int Stat(const char* url, const char* hostname,
   //if buffer == NULL we where called from Exists - in that case don't spam the log with errors
   if (ret != 0 && buffer != NULL) 
   {
-    XBMC->Log(ADDON::LOG_ERROR, "NFS: Failed to stat(%s) %s\n", filename2, nfs_get_error(CNFSConnection::Get().GetNfsContext()));
+    XBMC->Log(ADDON::LOG_ERROR, "NFS: Failed to stat(%s) %s\n", url->filename, nfs_get_error(CNFSConnection::Get().GetNfsContext()));
     ret = -1;
   }
   else
@@ -517,20 +502,16 @@ void DisconnectAll()
   CNFSConnection::Get().Deinit();
 }
 
-bool DirectoryExists(const char* url, const char* hostname,
-                     const char* filename, unsigned int port,
-                     const char* options, const char* username,
-                     const char* password)
+bool DirectoryExists(VFSURL* url)
 {
   int ret = 0;
 
   PLATFORM::CLockObject lock(CNFSConnection::Get());
-  std::string folderName(filename);
+  std::string folderName(url->filename);
   if (folderName[folderName.size()-1] == '/')
     folderName.erase(folderName.end()-1);
   
-  if(!CNFSConnection::Get().Connect(url, hostname, folderName.c_str(),
-                                    port, options, username, password, folderName))
+  if(!CNFSConnection::Get().Connect(url, folderName))
   {
     return false;
   }
@@ -545,11 +526,7 @@ bool DirectoryExists(const char* url, const char* hostname,
   return S_ISDIR(info.st_mode) ? true : false;
 }
 
-void* GetDirectory(const char* url, const char* hostname,
-                   const char* filename, unsigned int port,
-                   const char* options, const char* username,
-                   const char* password, VFSDirEntry** items,
-                   int* num_items)
+void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
 {
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   CNFSConnection::Get().AddActiveConnection();
@@ -557,12 +534,11 @@ void* GetDirectory(const char* url, const char* hostname,
   int ret = 0;
   uint64_t fileTime, localTime;    
   std::string strDirName;
-  std::string myStrPath(filename);
+  std::string myStrPath(url->filename);
   std::vector<VFSDirEntry>* itms = new std::vector<VFSDirEntry>;
   if (myStrPath[myStrPath.size()-1] != '/')
     myStrPath += '/';
-  if(!CNFSConnection::Get().Connect(url, hostname, myStrPath.c_str(),
-                                    port, options, username, password, strDirName))
+  if(!CNFSConnection::Get().Connect(url, strDirName))
   {
     //connect has failed - so try to get the exported filesystms if no path is given to the url
     if (myStrPath == "/")
@@ -606,8 +582,7 @@ void* GetDirectory(const char* url, const char* hostname,
     if(nfsdirent->type == NF3LNK)
     {
       //resolve symlink changes nfsdirent and strName
-      if(!ResolveSymlink(url, hostname, strDirName, port, options, 
-                         username, password, nfsdirent, path))
+      if(!ResolveSymlink(url, nfsdirent, path))
       { 
         continue;
       }
@@ -979,6 +954,11 @@ bool SelectChannel(void* context, unsigned int uiChannel)
 bool UpdateItem(void* context)
 {
   return false;
+}
+
+int GetChunkSize(void* context)
+{
+  return 1;
 }
 
 }

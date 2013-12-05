@@ -49,10 +49,7 @@ public:
   static CNFSConnection& Get();
   
   virtual ~CNFSConnection();
-  bool Connect(const std::string& url, const std::string& hostname,
-               const std::string& filename, unsigned int port,
-               const std::string& options, const std::string& username,
-               const std::string& password, std::string& relativePath);
+  bool Connect(VFSURL* url, std::string& relativePath);
   struct nfs_context *GetNfsContext(){return m_pNfsContext;}
   uint64_t          GetMaxReadChunkSize(){return m_readChunkSize;}
   uint64_t          GetMaxWriteChunkSize(){return m_writeChunkSize;} 
@@ -65,10 +62,7 @@ public:
   
   //special stat which uses its own context
   //needed for getting intervolume symlinks to work
-  int stat(const std::string& url, const std::string& hostname,
-           const std::string& filename, unsigned int port,
-           const std::string& options, const std::string& username,
-           const std::string& password, struct stat *statbuff);
+  int stat(VFSURL* url, struct stat *statbuff);
 
   void AddActiveConnection();
   void AddIdleConnection();
