@@ -241,9 +241,9 @@ bool CNFSConnection::splitUrlIntoExportAndPath(const std::string& hostname,
         //in that case we don't want to stripp off to
         //much from the path
         if( exportPath == "/" )
-          relativePath = "//" + path.substr(exportPath.length());
+          relativePath = "//" + path.substr(exportPath.length()-1);
         else
-          relativePath = "//" + path.substr(exportPath.length()+1);
+          relativePath = "//" + path.substr(exportPath.length());
         ret = true;
         break;          
       }
