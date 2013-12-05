@@ -542,8 +542,9 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
     myStrPath += '/';
   if(!CNFSConnection::Get().Connect(url, strDirName))
   {
+    std::cout << "conn fail" << std::endl;
     //connect has failed - so try to get the exported filesystms if no path is given to the url
-    if (myStrPath == "/")
+    if (!strlen(url.sharename))
     {
       if(!strlen(url->hostname))
       {
