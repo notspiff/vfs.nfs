@@ -83,7 +83,7 @@ static bool GetServerList(std::vector<VFSDirEntry>& items)
     std::string currentExport(srv->addr);
 
     VFSDirEntry pItem;
-    std::string path("nfs://" + currentExport);
+    std::string path(std::string("nfs://") + currentExport);
     if (path[path.size()-1] != '/')
       path += '/'; 
     pItem.path = strdup(path.c_str());
