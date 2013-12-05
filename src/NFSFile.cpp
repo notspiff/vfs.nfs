@@ -540,6 +540,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   std::vector<VFSDirEntry>* itms = new std::vector<VFSDirEntry>;
   if (myStrPath[myStrPath.size()-1] != '/')
     myStrPath += '/';
+
   if(!CNFSConnection::Get().Connect(url, strDirName))
   {
     std::cout << "conn fail" << std::endl;
@@ -558,6 +559,10 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
         *items = &(*itms)[0];
       *num_items = itms->size();
       return itms->empty()?NULL:itms;
+    }
+    else
+    {
+      return NULL;
     }
   }
       
