@@ -565,7 +565,6 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   struct nfsdir *nfsdir = NULL;
   struct nfsdirent *nfsdirent = NULL;
 
-  std::cout << "yo " << strDirName << std::endl;
   ret = nfs_opendir(CNFSConnection::Get().GetNfsContext(), strDirName.c_str(), &nfsdir);
 
   if(ret != 0)
@@ -578,7 +577,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
   while((nfsdirent = nfs_readdir(CNFSConnection::Get().GetNfsContext(), nfsdir)) != NULL) 
   {
     std::string strName = nfsdirent->name;
-    std::string path(url->url + strName);    
+    std::string path("nfs://"+url->url + strName);    
     int64_t iSize = 0;
     bool bIsDir = false;
     int64_t lTimeDate = 0;
