@@ -394,10 +394,7 @@ void CNFSConnection::keepAlive(std::string _exportPath, struct nfsfh  *_pFileHan
   nfs_lseek(pContext, _pFileHandle, offset, SEEK_SET, &offset);
 }
 
-int CNFSConnection::stat(const std::string& url, const std::string& hostname,
-                         const std::string& filename, unsigned int port,
-                         const std::string& options, const std::string& username,
-                         const std::string& password, struct stat *statbuff)
+int CNFSConnection::stat(VFSURL* url, struct stat *statbuff)
 {
   PLATFORM::CLockObject lock(*this);
   int nfsRet = 0;
@@ -405,9 +402,9 @@ int CNFSConnection::stat(const std::string& url, const std::string& hostname,
   std::string relativePath;
   struct nfs_context *pTmpContext = NULL;
   
-  resolveHost(hostname);
+  resolveHost(url->hostname);
   
-  if(splitUrlIntoExportAndPath(hostname, filename, exportPath, relativePath))
+  if(splitUrlIntoExportAndPath(url->hostname, url->filename, exportPath, relativePath))
   {    
     pTmpContext = nfs_init_context();
     
