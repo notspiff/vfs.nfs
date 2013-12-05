@@ -875,7 +875,7 @@ void* OpenForWrite(VFSURL* url, bool bOverWrite)
     delete result;
     return NULL;
   }
-  result->filename = filename2;
+  result->filename = url->filename;
   
   //only stat if file was not created
   if(!bOverWrite) 
