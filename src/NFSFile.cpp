@@ -59,7 +59,6 @@ static bool GetDirectoryFromExportList(const std::string& strPath, std::vector<V
     if (path[path.size()-1] != '/')
       path += '/'; 
     pItem.path = strdup(path.c_str());
-    pItem.mtime=0;
 
     pItem.folder = true;
     pItem.properties = NULL;
