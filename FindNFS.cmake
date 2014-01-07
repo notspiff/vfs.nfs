@@ -5,6 +5,7 @@
 # NFS_INCLUDE_DIRS - the libnfs include directory
 # NFS_LIBRARIES - The libnfs libraries
 
+find_package(PkgConfig REQUIRED)
 if(PKG_CONFIG_FOUND)
   pkg_check_modules (NFS libnfs)
   list(APPEND NFS_INCLUDE_DIRS ${NFS_INCLUDEDIR})
