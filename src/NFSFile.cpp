@@ -526,7 +526,8 @@ bool DirectoryExists(VFSURL* url)
   return S_ISDIR(info.st_mode) ? true : false;
 }
 
-void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items)
+void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items,
+                   VFSCallbacks* callbacks)
 {
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   CNFSConnection::Get().AddActiveConnection();
