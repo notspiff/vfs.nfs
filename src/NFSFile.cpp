@@ -332,25 +332,22 @@ void* Open(VFSURL* url)
   return result;
 }
 
-unsigned int Read(void* context, void* lpBuf, int64_t uiBufSize)
+ssize_t Read(void* context, void* lpBuf, size_t uiBufSize)
 {
   NFSContext* ctx = (NFSContext*)context;
   if (!ctx || !ctx->pFileHandle|| !ctx->pNfsContext)
-    return 0;
+    return -1;
 
-  int numberOfBytesRead = 0;
   PLATFORM::CLockObject lock(CNFSConnection::Get());
-  numberOfBytesRead = nfs_read(ctx->pNfsContext, ctx->pFileHandle, uiBufSize, (char *)lpBuf);  
+  ssize_t numberOfBytesRead = nfs_read(ctx->pNfsContext, ctx->pFileHandle, uiBufSize, (char *)lpBuf);
   
   CNFSConnection::Get().resetKeepAlive(ctx->exportPath, ctx->pFileHandle);//triggers keep alive timer reset for this filehandle
   
   //something went wrong ...
   if (numberOfBytesRead < 0) 
-  {
     XBMC->Log(ADDON::LOG_ERROR, "%s - Error( %d, %s )", __FUNCTION__, numberOfBytesRead, nfs_get_error(ctx->pNfsContext));
-    return 0;
-  }
-  return (unsigned int)numberOfBytesRead;
+
+  return numberOfBytesRead;
 }
 
 bool Close(void* context)
@@ -749,17 +746,17 @@ int Truncate(void* context, int64_t size)
 //this was a bitch!
 //for nfs write to work we have to write chunked
 //otherwise this could crash on big files
-int Write(void* context, const void* lpBuf, int64_t uiBufSize)
+ssize_t Write(void* context, const void* lpBuf, size_t uiBufSize)
 {
   NFSContext* ctx = (NFSContext*)context;
   if (!ctx || !ctx->pFileHandle|| !ctx->pNfsContext)
     return -1;
 
-  int numberOfBytesWritten = 0;
-  int writtenBytes = 0;
-  int64_t leftBytes = uiBufSize;
+  ssize_t numberOfBytesWritten = 0;
+  ssize_t writtenBytes = 0;
+  size_t leftBytes = uiBufSize;
   //clamp max write chunksize to 32kb - fixme - this might be superfluious with future libnfs versions
-  int64_t chunkSize = CNFSConnection::Get().GetMaxWriteChunkSize() > 32768 ? 32768 : CNFSConnection::Get().GetMaxWriteChunkSize();
+  size_t chunkSize = CNFSConnection::Get().GetMaxWriteChunkSize() > 32768 ? 32768 : CNFSConnection::Get().GetMaxWriteChunkSize();
   
   PLATFORM::CLockObject lock(CNFSConnection::Get());
   
