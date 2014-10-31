@@ -24,7 +24,7 @@ extern "C"
 #include <nfsc/libnfs.h>
 #include <nfsc/libnfs-raw-mount.h>
 }
-#include <xbmc/libXBMC_addon.h>
+#include <kodi/libXBMC_addon.h>
 
 //KEEP_ALIVE_TIMEOUT is decremented every half a second
 //360 * 0.5s == 180s == 3mins

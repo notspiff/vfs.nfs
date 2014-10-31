@@ -7,11 +7,11 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 enable_language(CXX)
 
 find_package(NFS REQUIRED)
-find_package(xbmc REQUIRED)
-find_package(xbmcplatform REQUIRED)
+find_package(kodi REQUIRED)
+find_package(kodiplatform REQUIRED)
 
-include_directories(${XBMC_INCLUDE_DIR}
-                    ${XBMCPLATFORM_INCLUDE_DIRS}
+include_directories(${KODI_INCLUDE_DIR}
+                    ${KODIPLATFORM_INCLUDE_DIRS}
                     ${NFS_INCLUDE_DIRS})
 
 set(NFS_SOURCES src/NFSConnection.cpp
