@@ -146,7 +146,7 @@ struct nfs_context *CNFSConnection::getContextFromMap(const std::string& exportn
       //refresh access time of that
       //context and return it
       if (!forceCacheHit) // only log it if this isn't the resetkeepalive on each read ;)
-        XBMC->Log(ADDON::LOG_DEBUG, "NFS: Refreshing context for %s, old: %"PRId64", new: %"PRId64, exportname.c_str(), it->second.lastAccessedTime, now);
+        XBMC->Log(ADDON::LOG_DEBUG, "NFS: Refreshing context for %s, old: %" PRId64 ", new: %" PRId64, exportname.c_str(), it->second.lastAccessedTime, now);
       it->second.lastAccessedTime = now;
       pRet = it->second.pContext;
     }

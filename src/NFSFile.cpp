@@ -427,7 +427,7 @@ int64_t Seek(void* context, int64_t iFilePosition, int iWhence)
   ret = (int)nfs_lseek(ctx->pNfsContext, ctx->pFileHandle, iFilePosition, iWhence, &offset);
   if (ret < 0) 
   {
-    XBMC->Log(ADDON::LOG_ERROR, "%s - Error( seekpos: %"PRId64", whence: %i, fsize: %"PRId64", %s)",
+    XBMC->Log(ADDON::LOG_ERROR, "%s - Error( seekpos: %" PRId64 ", whence: %i, fsize: %" PRId64 ", %s)",
               __FUNCTION__, iFilePosition, iWhence, ctx->size, nfs_get_error(ctx->pNfsContext));
     return -1;
   }
@@ -736,7 +736,7 @@ int Truncate(void* context, int64_t size)
   ret = (int)nfs_ftruncate(ctx->pNfsContext, ctx->pFileHandle, size);
   if (ret < 0) 
   {
-    XBMC->Log(ADDON::LOG_ERROR, "%s - Error( ftruncate: %"PRId64", fsize: %"PRId64", %s)",
+    XBMC->Log(ADDON::LOG_ERROR, "%s - Error( ftruncate: %" PRId64 ", fsize: %" PRId64 ", %s)",
               __FUNCTION__, size, ctx->size, nfs_get_error(ctx->pNfsContext));
     return -1;
   }
