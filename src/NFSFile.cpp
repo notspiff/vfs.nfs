@@ -530,7 +530,7 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items,
   CNFSConnection::Get().AddActiveConnection();
   // We accept nfs://server/path[/file]]]]
   int ret = 0;
-  FILETIME fileTime, localTime;
+  //FILETIME fileTime, localTime;
   std::string strDirName;
   std::string myStrPath(url->url);
   std::vector<VFSDirEntry>* itms = new std::vector<VFSDirEntry>;
@@ -604,14 +604,14 @@ void* GetDirectory(VFSURL* url,VFSDirEntry** items, int* num_items,
         lTimeDate = nfsdirent->ctime.tv_sec;
       }
 
-      LONGLONG ll = PLATFORM::Int32x32To64(lTimeDate & 0xffffffff, 10000000) + 116444736000000000ll;
+      /*LONGLONG ll = PLATFORM::Int32x32To64(lTimeDate & 0xffffffff, 10000000) + 116444736000000000ll;
       fileTime.dwLowDateTime = (DWORD) (ll & 0xffffffff);
       fileTime.dwHighDateTime = (DWORD)(ll >> 32);
-      PLATFORM::FileTimeToLocalFileTime(&fileTime, &localTime);
+      PLATFORM::FileTimeToLocalFileTime(&fileTime, &localTime);*/
 
       VFSDirEntry pItem;
       pItem.label = strdup(nfsdirent->name);
-      pItem.mtime = localTime;
+      //pItem.mtime = localTime;
       pItem.size = iSize;
       
       if (bIsDir)
