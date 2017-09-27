@@ -1,0 +1,22 @@
+Source: kodi-vfs-nfs
+Priority: extra
+Maintainer: Arne Morten Kvarving <spiff@xbmc.org>
+Build-Depends: debhelper (>= 9.0.0), cmake, libkodiplatform-dev (>= 16.0.0),
+               kodi-addon-dev
+Standards-Version: 3.9.4
+Section: libs
+
+Package: kodi-vfs-nfs
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: NFS VFS for Kodi
+ NFS VFS for Kodi
+
+Package: kodi-vfs-nfs-dbg
+Section: debug
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: debug symbols for NFS VFS for Kodi
+ debug symbols for NFS VFS for Kodi
+
