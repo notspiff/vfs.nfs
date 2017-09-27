@@ -18,27 +18,23 @@
  *
  */
 
-#ifndef NFS_CONNECTION_H_
-#define NFS_CONNECTION_H_
-
 #include <list>
 #include <map>
 #include <stdint.h>
 #include <string>
 
-#include <platform/threads/mutex.h>
+#include <kodi/addon-instance/VFS.h>
+#include <p8-platform/threads/mutex.h>
 
-#include "kodi/kodi_vfs_types.h"
-
-class CNFSConnection : public PLATFORM::CMutex
-{     
+class CNFSConnection : public P8PLATFORM::CMutex
+{
 public:
   struct keepAliveStruct
   {
     std::string exportPath;
     uint64_t refreshCounter;
   };
-  typedef std::map<struct nfsfh  *, struct keepAliveStruct> tFileKeepAliveMap;  
+  typedef std::map<struct nfsfh  *, struct keepAliveStruct> tFileKeepAliveMap;
 
   struct contextTimeout
   {
@@ -46,25 +42,25 @@ public:
     uint64_t lastAccessedTime;
   };
 
-  typedef std::map<std::string, struct contextTimeout> tOpenContextMap;    
+  typedef std::map<std::string, struct contextTimeout> tOpenContextMap;
 
   static CNFSConnection& Get();
-  
+
   virtual ~CNFSConnection();
-  bool Connect(VFSURL* url, std::string& relativePath);
+  bool Connect(const VFSURL& url, std::string& relativePath);
   struct nfs_context *GetNfsContext(){return m_pNfsContext;}
   uint64_t          GetMaxReadChunkSize(){return m_readChunkSize;}
-  uint64_t          GetMaxWriteChunkSize(){return m_writeChunkSize;} 
+  uint64_t          GetMaxWriteChunkSize(){return m_writeChunkSize;}
   std::list<std::string> GetExportList();
   //this functions splits the url into the exportpath (feed to mount) and the rest of the path
   //relative to the mounted export
   bool splitUrlIntoExportAndPath(const std::string& hostname,
                                  const std::string& filename,
                                  std::string& exportPath, std::string& relativePath);
-  
+
   //special stat which uses its own context
   //needed for getting intervolume symlinks to work
-  int stat(VFSURL* url, struct stat *statbuff);
+  int stat(const VFSURL& url, struct stat *statbuff);
 
   void AddActiveConnection();
   void AddIdleConnection();
@@ -74,8 +70,8 @@ public:
   //the timeout for this filehandle if already in list
   void resetKeepAlive(std::string _exportPath, struct nfsfh  *_pFileHandle);
   //removes file handle from keep alive list
-  void removeFromKeepAliveList(struct nfsfh  *_pFileHandle);  
-  
+  void removeFromKeepAliveList(struct nfsfh  *_pFileHandle);
+
   const std::string& GetConnectedIp() const {return m_resolvedHostName;}
   const std::string& GetConnectedExport() const {return m_exportPath;}
   const std::string  GetContextMapId() const {return m_hostName + m_exportPath;}
@@ -92,10 +88,10 @@ private:
   tFileKeepAliveMap m_KeepAliveTimeouts;//mapping filehandles to its idle timeout
   tOpenContextMap m_openContextMap;//unique map for tracking all open contexts
   uint64_t m_lastAccessedTime;//last access time for m_pNfsContext
-  std::list<std::string> m_exportList;//list of exported pathes of current connected servers
-  PLATFORM::CMutex m_keepAliveLock;
-  PLATFORM::CMutex m_openContextLock;
- 
+  std::list<std::string> m_exportList;//list of exported paths of current connected servers
+  P8PLATFORM::CMutex m_keepAliveLock;
+  P8PLATFORM::CMutex m_openContextLock;
+
   void clearMembers();
   struct nfs_context *getContextFromMap(const std::string& exportname, bool forceCacheHit = false);
   int  getContextForExport(const std::string& exportname);//get context for given export and add to open contexts map - sets m_pNfsContext (my return a already mounted cached context)
@@ -104,4 +100,3 @@ private:
   void resolveHost(const std::string& hostname);//resolve hostname by dnslookup
   void keepAlive(std::string _exportPath, struct nfsfh  *_pFileHandle);
 };
-#endif
