@@ -8,6 +8,9 @@ externalproject_add(nfs
                     UPDATE_COMMAND ./bootstrap WORKING_DIRECTORY <SOURCE_DIR>
                     CONFIGURE_COMMAND <SOURCE_DIR>/configure
                       --prefix=${OUTPUT_DIR}
+                      --enable-static
+                      --disable-shared
+                      CFLAGS=-fPIC
                     INSTALL_COMMAND ""
                     BUILD_IN_SOURCE 1)
 
