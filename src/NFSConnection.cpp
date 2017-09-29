@@ -18,6 +18,8 @@
  *
  */
 
+#include <inttypes.h>
+
 #include "NFSConnection.h"
 extern "C"
 {
@@ -407,7 +409,7 @@ void CNFSConnection::keepAlive(std::string _exportPath, struct nfsfh  *_pFileHan
   nfs_lseek(pContext, _pFileHandle, offset, SEEK_SET, &offset);
 }
 
-int CNFSConnection::stat(const VFSURL& url, struct stat *statbuff)
+int CNFSConnection::stat(const VFSURL& url, NFSSTAT *statbuff)
 {
   P8PLATFORM::CLockObject lock(*this);
   int nfsRet = 0;
