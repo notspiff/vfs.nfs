@@ -21,7 +21,7 @@ set(NFS_VERSION ${PC_NFS_VERSION})
 
 include(FindPackageHandleStandardArgs)
 
-find_library(NFS_LIBRARY NAMES nfs
+find_library(NFS_LIBRARY NAMES nfs libnfs
                          PATHS ${PC_NFS_LIBDIR})
 
 find_package_handle_standard_args(NFS
