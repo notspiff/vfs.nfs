@@ -30,6 +30,9 @@ find_package_handle_standard_args(NFS
 
 if(NFS_FOUND)
   set(NFS_LIBRARIES ${NFS_LIBRARY})
+  if(WIN32)
+    list(APPEND NFS_LIBRARIES ws2_32)
+  endif()
   set(NFS_INCLUDE_DIRS ${NFS_INCLUDE_DIR})
   set(NFS_DEFINITIONS -DHAVE_LIBNFS=1)
 endif()
