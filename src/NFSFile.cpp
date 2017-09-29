@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <sstream>
 #include <iostream>
+#include <inttypes.h>
 
 extern "C"
 {

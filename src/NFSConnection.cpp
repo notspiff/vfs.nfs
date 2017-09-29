@@ -18,6 +18,8 @@
  *
  */
 
+#include <inttypes.h>
+
 #include "NFSConnection.h"
 extern "C"
 {
