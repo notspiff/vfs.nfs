@@ -26,6 +26,12 @@
 #include <kodi/addon-instance/VFS.h>
 #include <p8-platform/threads/mutex.h>
 
+#if defined(TARGET_WINDOWS)
+#define NFSSTAT struct _stat64
+#else
+#define NFSSTAT struct stat
+#endif
+
 class CNFSConnection : public P8PLATFORM::CMutex
 {
 public:
@@ -60,7 +66,7 @@ public:
 
   //special stat which uses its own context
   //needed for getting intervolume symlinks to work
-  int stat(const VFSURL& url, struct stat *statbuff);
+  int stat(const VFSURL& url, NFSSTAT *statbuff);
 
   void AddActiveConnection();
   void AddIdleConnection();

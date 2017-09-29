@@ -35,6 +35,12 @@ extern "C"
 #include <kodi/Filesystem.h>
 #include <kodi/General.h>
 
+#if defined(TARGET_WINDOWS)
+#define NFSSTAT struct _stat64
+#else
+#define NFSSTAT struct stat
+#endif
+
 void* CNFSFile::Open(const VFSURL& url)
 {
   CNFSConnection::Get().AddActiveConnection();
@@ -310,7 +316,7 @@ int CNFSFile::Stat(const VFSURL& url, struct __stat64* buffer)
     return -1;
   }
 
-  struct stat tmpBuffer = {0};
+  NFSSTAT tmpBuffer = {0};
 
   ret = nfs_stat(CNFSConnection::Get().GetNfsContext(), filename.c_str(), &tmpBuffer);
 
@@ -445,7 +451,7 @@ bool CNFSFile::DirectoryExists(const VFSURL& url)
     return false;
   }
 
-  struct stat info;
+  NFSSTAT info;
   ret = nfs_stat(CNFSConnection::Get().GetNfsContext(), folderName.c_str(), &info);
 
   if (ret != 0)
@@ -700,7 +706,7 @@ bool CNFSFile::ResolveSymlink(const VFSURL& url, struct nfsdirent *dirent, std::
 
   if(ret == 0)
   {
-    struct stat tmpBuffer = {0};
+    NFSSTAT tmpBuffer = {0};
     fullpath = url.filename;
     if (fullpath[fullpath.size()-1] != '/')
       fullpath += '/';
