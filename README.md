@@ -2,6 +2,9 @@
 
 This is a [Kodi](http://kodi.tv) VFS addon to support NFS file systems.
 
+[![Build Status](https://travis-ci.org/notspiff/vfs.nfs.svg?branch=master)](https://travis-ci.org/notspiff/vfs.nfs)
+[![Build Status](https://ci.appveyor.com/api/projects/status/github/notspiff/vfs.nfs?svg=true)](https://ci.appveyor.com/project/notspiff/vfs-nfs)
+
 ## Build instructions
 
 When building the addon you have to use the correct branch depending on which version of Kodi you're building against. 
