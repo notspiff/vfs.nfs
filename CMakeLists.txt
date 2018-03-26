@@ -29,3 +29,5 @@ add_definitions(-D_LARGEFILE64_SOURCE
                 -D__STDC_FORMAT_MACROS)
 
 build_addon(vfs.nfs NFS DEPLIBS)
+
+include(CPack)
