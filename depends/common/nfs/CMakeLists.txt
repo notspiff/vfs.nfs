@@ -10,6 +10,7 @@ externalproject_add(nfs
                       --prefix=${OUTPUT_DIR}
                       --enable-static
                       --disable-shared
+                      --disable-werror
                       CFLAGS=-fPIC
                     INSTALL_COMMAND ""
                     BUILD_IN_SOURCE 1)
