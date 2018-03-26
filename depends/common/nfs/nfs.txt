@@ -1,1 +1,1 @@
-nfs http://mirrors.xbmc.org/build-deps/sources/libnfs-1.10.0.tar.gz
+nfs http://mirrors.kodi.tv/build-deps/sources/libnfs-2.0.0.tar.gz
