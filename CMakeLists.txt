@@ -29,7 +29,7 @@ add_definitions(-D_LARGEFILE64_SOURCE
                 -D__STDC_FORMAT_MACROS)
 
 if(CORE_SYSTEM_NAME MATCHES "windows")
-  add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -DLIBSSH_STATIC)
+  add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE)
 endif()
 
 build_addon(vfs.nfs NFS DEPLIBS)
