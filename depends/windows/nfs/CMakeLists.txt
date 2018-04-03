@@ -42,7 +42,7 @@ target_include_directories(
   $<INSTALL_INTERFACE:include/nfsc>
 )
 
-target_compile_definitions(libnfs PRIVATE _U_=)
+target_compile_definitions(libnfs PRIVATE _U_= _CRT_NONSTDC_NO_DEPRECATE)
 target_link_libraries(libnfs PRIVATE ws2_32.lib)
 
 include(CMakePackageConfigHelpers)

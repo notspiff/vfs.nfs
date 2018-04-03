@@ -28,6 +28,10 @@ add_definitions(-D_LARGEFILE64_SOURCE
                 -D_FILE_OFFSET_BITS=64
                 -D__STDC_FORMAT_MACROS)
 
+if(CORE_SYSTEM_NAME MATCHES "windows")
+  add_definitions(-D_CRT_NONSTDC_NO_DEPRECATE -DLIBSSH_STATIC)
+endif()
+
 build_addon(vfs.nfs NFS DEPLIBS)
 
 include(CPack)
