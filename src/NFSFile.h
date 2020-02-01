@@ -18,6 +18,8 @@
  *
  */
 
+#pragma once
+
 #include "NFSConnection.h"
 
 #ifdef TARGET_WINDOWS
@@ -62,8 +64,8 @@ public:
   virtual int Stat(const VFSURL& url, struct __stat64* buffer) override;
   virtual bool Close(void* context) override;
   virtual bool Exists(const VFSURL& url) override;
-  virtual void ClearOutIdle();
-  virtual void DisconnectAll();
+  virtual void ClearOutIdle() override;
+  virtual void DisconnectAll() override;
   virtual bool Delete(const VFSURL& url) override;
   virtual bool Rename(const VFSURL& url, const VFSURL& url2) override;
   virtual bool DirectoryExists(const VFSURL& url) override;
