@@ -32,7 +32,7 @@
 #define NFSSTAT struct stat
 #endif
 
-class CNFSConnection : public std::recursive_mutex
+class ATTRIBUTE_HIDDEN CNFSConnection : public std::recursive_mutex
 {
 public:
   struct keepAliveStruct

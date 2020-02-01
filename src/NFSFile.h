@@ -47,31 +47,33 @@ struct NFSContext
   std::string filename;
 };
 
-class CNFSFile : public kodi::addon::CInstanceVFS
+class ATTRIBUTE_HIDDEN CNFSFile : public kodi::addon::CInstanceVFS
 {
 public:
   CNFSFile(KODI_HANDLE instance) : CInstanceVFS(instance) { }
-  virtual void* Open(const VFSURL& url) override;
-  virtual void* OpenForWrite(const VFSURL& url, bool bOverWrite = false) override;
-  virtual ssize_t Read(void* context, void* lpBuf, size_t uiBufSize) override;
-  virtual ssize_t Write(void* context, const void* lpBuf, size_t uiBufSize) override;
-  virtual int64_t Seek(void* context, int64_t iFilePosition, int iWhence) override;
-  virtual int Truncate(void* context, int64_t size) override;
-  virtual int64_t GetLength(void* context) override;
-  virtual int64_t GetPosition(void* context) override;
-  virtual int GetChunkSize(void* context) override {return CNFSConnection::Get().GetMaxReadChunkSize();}
-  virtual int IoControl(void* context, XFILE::EIoControl request, void* param) override;
-  virtual int Stat(const VFSURL& url, struct __stat64* buffer) override;
-  virtual bool Close(void* context) override;
-  virtual bool Exists(const VFSURL& url) override;
-  virtual void ClearOutIdle() override;
-  virtual void DisconnectAll() override;
-  virtual bool Delete(const VFSURL& url) override;
-  virtual bool Rename(const VFSURL& url, const VFSURL& url2) override;
-  virtual bool DirectoryExists(const VFSURL& url) override;
-  virtual bool RemoveDirectory(const VFSURL& url2) override;
-  virtual bool CreateDirectory(const VFSURL& url2) override;
-  virtual bool GetDirectory(const VFSURL& url, std::vector<kodi::vfs::CDirEntry>& items, CVFSCallbacks callbacks) override;
+
+  void* Open(const VFSURL& url) override;
+  void* OpenForWrite(const VFSURL& url, bool bOverWrite = false) override;
+  ssize_t Read(void* context, void* lpBuf, size_t uiBufSize) override;
+  ssize_t Write(void* context, const void* lpBuf, size_t uiBufSize) override;
+  int64_t Seek(void* context, int64_t iFilePosition, int iWhence) override;
+  int Truncate(void* context, int64_t size) override;
+  int64_t GetLength(void* context) override;
+  int64_t GetPosition(void* context) override;
+  int GetChunkSize(void* context) override {return CNFSConnection::Get().GetMaxReadChunkSize();}
+  int IoControl(void* context, XFILE::EIoControl request, void* param) override;
+  int Stat(const VFSURL& url, struct __stat64* buffer) override;
+  bool Close(void* context) override;
+  bool Exists(const VFSURL& url) override;
+  void ClearOutIdle() override;
+  void DisconnectAll() override;
+  bool Delete(const VFSURL& url) override;
+  bool Rename(const VFSURL& url, const VFSURL& url2) override;
+  bool DirectoryExists(const VFSURL& url) override;
+  bool RemoveDirectory(const VFSURL& url2) override;
+  bool CreateDirectory(const VFSURL& url2) override;
+  bool GetDirectory(const VFSURL& url, std::vector<kodi::vfs::CDirEntry>& items, CVFSCallbacks callbacks) override;
+
 protected:
   bool GetDirectoryFromExportList(const std::string& strPath, std::vector<kodi::vfs::CDirEntry>& items);
   bool GetServerList(std::vector<kodi::vfs::CDirEntry>& items);
@@ -86,8 +88,8 @@ protected:
 class ATTRIBUTE_HIDDEN CMyAddon : public kodi::addon::CAddonBase
 {
 public:
-  CMyAddon() { }
-  virtual ADDON_STATUS CreateInstance(int instanceType, std::string instanceID, KODI_HANDLE instance, KODI_HANDLE& addonInstance) override
+  CMyAddon() = default;
+  ADDON_STATUS CreateInstance(int instanceType, std::string instanceID, KODI_HANDLE instance, KODI_HANDLE& addonInstance) override
   {
     addonInstance = new CNFSFile(instance);
     return ADDON_STATUS_OK;
