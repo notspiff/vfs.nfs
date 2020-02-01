@@ -18,7 +18,6 @@
  *
  */
 
-#include "p8-platform/threads/mutex.h"
 #include <fcntl.h>
 #include <sstream>
 #include <iostream>
@@ -34,6 +33,16 @@ extern "C"
 #include "NFSFile.h"
 #include <kodi/Filesystem.h>
 #include <kodi/General.h>
+
+#ifdef TARGET_LINUX
+#include <limits.h>
+#define MAX_PATH PATH_MAX
+#elif defined TARGET_DARWIN || defined __FreeBSD__
+#include <sys/syslimits.h>
+#define MAX_PATH PATH_MAX
+#else
+#define MAX_PATH 256
+#endif
 
 #if defined(TARGET_WINDOWS)
 #define NFSSTAT struct _stat64
@@ -55,7 +64,7 @@ void* CNFSFile::Open(const VFSURL& url)
 
   std::string filename;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
 
   if(!CNFSConnection::Get().Connect(url, filename))
   {
@@ -101,7 +110,7 @@ void* CNFSFile::OpenForWrite(const VFSURL& url, bool bOverWrite)
   if (!IsValidFile(url.filename))
     return nullptr;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string filename;
 
   if(!CNFSConnection::Get().Connect(url, filename))
@@ -166,7 +175,7 @@ ssize_t CNFSFile::Read(void* context, void* lpBuf, size_t uiBufSize)
   if (!ctx || !ctx->pFileHandle|| !ctx->pNfsContext)
     return -1;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   ssize_t numberOfBytesRead = nfs_read(ctx->pNfsContext, ctx->pFileHandle, uiBufSize, (char *)lpBuf);
 
   CNFSConnection::Get().resetKeepAlive(ctx->exportPath, ctx->pFileHandle);//triggers keep alive timer reset for this filehandle
@@ -193,7 +202,7 @@ ssize_t CNFSFile::Write(void* context, const void* lpBuf, size_t uiBufSize)
   //clamp max write chunksize to 32kb - fixme - this might be superfluous with future libnfs versions
   size_t chunkSize = CNFSConnection::Get().GetMaxWriteChunkSize() > 32768 ? 32768 : CNFSConnection::Get().GetMaxWriteChunkSize();
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
 
   //write as long as some bytes are left to be written
   while( leftBytes )
@@ -235,7 +244,7 @@ int64_t CNFSFile::Seek(void* context, int64_t iFilePosition, int iWhence)
   int ret = 0;
   uint64_t offset = 0;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
 
   ret = (int)nfs_lseek(ctx->pNfsContext, ctx->pFileHandle, iFilePosition, iWhence, &offset);
   if (ret < 0)
@@ -254,7 +263,7 @@ int CNFSFile::Truncate(void* context, int64_t size)
     return -1;
 
   int ret = 0;
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   ret = (int)nfs_ftruncate(ctx->pNfsContext, ctx->pFileHandle, size);
   if (ret < 0)
   {
@@ -286,7 +295,7 @@ int64_t CNFSFile::GetPosition(void* context)
   if (CNFSConnection::Get().GetNfsContext() == nullptr || ctx->pFileHandle == nullptr)
     return 0;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
 
   ret = (int)nfs_lseek(CNFSConnection::Get().GetNfsContext(), ctx->pFileHandle, 0, SEEK_CUR, &offset);
 
@@ -308,7 +317,7 @@ int CNFSFile::IoControl(void* context, XFILE::EIoControl request, void* param)
 int CNFSFile::Stat(const VFSURL& url, struct __stat64* buffer)
 {
   int ret = 0;
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string filename;
 
   if(!CNFSConnection::Get().Connect(url, filename))
@@ -353,7 +362,7 @@ bool CNFSFile::Close(void* context)
   if (!ctx)
     return false;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   CNFSConnection::Get().AddIdleConnection();
 
   if (ctx->pFileHandle != nullptr && ctx->pNfsContext != nullptr)
@@ -394,7 +403,7 @@ void CNFSFile::DisconnectAll()
 bool CNFSFile::Delete(const VFSURL& url)
 {
   int ret = 0;
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string filename;
 
   if(!CNFSConnection::Get().Connect(url, filename))
@@ -415,7 +424,7 @@ bool CNFSFile::Delete(const VFSURL& url)
 bool CNFSFile::Rename(const VFSURL& url, const VFSURL& url2)
 {
   int ret = 0;
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string strFile;
 
   if(!CNFSConnection::Get().Connect(url, strFile))
@@ -441,7 +450,7 @@ bool CNFSFile::DirectoryExists(const VFSURL& url)
 {
   int ret = 0;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string folderName(url.filename);
   if (folderName[folderName.size()-1] == '/')
     folderName.erase(folderName.end()-1);
@@ -465,7 +474,7 @@ bool CNFSFile::RemoveDirectory(const VFSURL& url2)
 {
   int ret = 0;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string folderName(url2.filename);
   VFSURL url = url2;
   if (folderName[folderName.size()-1] == '/')
@@ -494,7 +503,7 @@ bool CNFSFile::CreateDirectory(const VFSURL& url2)
   int ret = 0;
   bool success=true;
 
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   std::string folderName(url2.filename);
   VFSURL url = url2;
 
@@ -520,7 +529,7 @@ bool CNFSFile::CreateDirectory(const VFSURL& url2)
 
 bool CNFSFile::GetDirectory(const VFSURL& url, std::vector<kodi::vfs::CDirEntry>& items, CVFSCallbacks callbacks)
 {
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   CNFSConnection::Get().AddActiveConnection();
   // We accept nfs://server/path[/file]]]]
   int ret = 0;
@@ -561,7 +570,7 @@ bool CNFSFile::GetDirectory(const VFSURL& url, std::vector<kodi::vfs::CDirEntry>
     kodi::Log(ADDON_LOG_ERROR, "Failed to open(%s) %s", strDirName.c_str(), nfs_get_error(CNFSConnection::Get().GetNfsContext()));
     return false;
   }
-  lock.Unlock();
+  lock.unlock();
 
   while((nfsdirent = nfs_readdir(CNFSConnection::Get().GetNfsContext(), nfsdir)) != nullptr)
   {
@@ -628,7 +637,7 @@ bool CNFSFile::GetDirectory(const VFSURL& url, std::vector<kodi::vfs::CDirEntry>
     }
   }
 
-  lock.Lock();
+  lock.lock();
   nfs_closedir(CNFSConnection::Get().GetNfsContext(), nfsdir);//close the dir
   return true;
 }
@@ -692,7 +701,7 @@ bool CNFSFile::GetServerList(std::vector<kodi::vfs::CDirEntry>& items)
 
 bool CNFSFile::ResolveSymlink(const VFSURL& url, struct nfsdirent *dirent, std::string& resolvedUrl)
 {
-  P8PLATFORM::CLockObject lock(CNFSConnection::Get());
+  std::unique_lock<std::recursive_mutex> lock(CNFSConnection::Get());
   int ret = 0;
   bool retVal = true;
   std::string fullpath = url.filename;
