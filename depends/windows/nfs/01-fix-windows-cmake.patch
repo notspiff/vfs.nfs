@@ -1,0 +1,378 @@
+From 6564abaa1f979c0b62044f695030a32b60620163 Mon Sep 17 00:00:00 2001
+From: crusader-mike <crusader.mike@gmail.com>
+Date: Thu, 12 Sep 2019 15:07:35 -0500
+Subject: [PATCH] fixed CMake build on windows, few trivial fixes
+
+---
+ CMakeLists.txt               | 33 +++++++++--------
+ cmake/Macros.cmake           |  4 +--
+ examples/CMakeLists.txt      | 22 +++++-------
+ examples/portmap-client.c    | 13 +++++++
+ include/nfsc/libnfs.h        |  2 +-
+ include/win32/win32_compat.h |  2 +-
+ lib/CMakeLists.txt           | 21 +++++------
+ tests/CMakeLists.txt         | 68 +++++++++++++++++-------------------
+ utils/CMakeLists.txt         | 14 +++-----
+ win32/CMakeLists.txt         |  2 +-
+ win32/win32_compat.c         |  2 +-
+ 11 files changed, 92 insertions(+), 91 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3a17fe46..f1edbc60 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
+ 
+ project(libnfs
+         LANGUAGES C
+-        VERSION 2.0.0)
++        VERSION 4.0.0)
+ 
+ set(SOVERSION 11.0.0 CACHE STRING "" FORCE)
+ 
+@@ -29,21 +29,35 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}
+                     include
+                     include/nfsc)
+ 
+-set(CORE_LIBRARIES nfs)
+-set(core_DEPENDS "" CACHE STRING "" FORCE)
++# list of system libs (sockets/etc) to be linked on this system
++set(SYSTEM_LIBRARIES "")
++# list of core (static) libraries built in current configuration (used by lib/CMakeLists.txt)
++set(CORE_LIBRARIES "" CACHE INTERNAL "")
+ 
+ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+-  list(APPEND CORE_LIBRARIES -lws2_32.lib)
++  add_definitions("-D_U_=" -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
++  list(APPEND SYSTEM_LIBRARIES ws2_32)
+   add_subdirectory(win32)
+ elseif(CMAKE_SYSTEM_NAME STREQUAL Solaris)
++  add_definitions("-D_U_=__attribute__((unused))")
+   find_library(SOCKET_LIBRARY socket)
+   find_library(NSL_LIBRARY nsl)
+-  list(APPEND CORE_LIBRARIES ${SOCKET_LIBRARY} ${NSL_LIBRARY})
++  list(APPEND SYSTEM_LIBRARIES ${SOCKET_LIBRARY} ${NSL_LIBRARY})
+ elseif(CMAKE_SYSTEM_NAME STREQUAL aros)
++  add_definitions("-D_U_=__attribute__((unused))")
+   add_definitions(-DAROS)
+   add_subdirectory(aros)
+ endif()
+ 
++add_subdirectory(mount)
++add_subdirectory(nfs)
++add_subdirectory(nfs4)
++add_subdirectory(nlm)
++add_subdirectory(nsm)
++add_subdirectory(portmap)
++add_subdirectory(rquota)
++add_subdirectory(lib)
++
+ if(ENABLE_DOCUMENTATION)
+   add_subdirectory(doc)
+ endif()
+@@ -61,15 +75,6 @@ if(ENABLE_UTILS)
+   add_subdirectory(utils)
+ endif()
+ 
+-add_subdirectory(mount)
+-add_subdirectory(nfs)
+-add_subdirectory(nfs4)
+-add_subdirectory(nlm)
+-add_subdirectory(nsm)
+-add_subdirectory(portmap)
+-add_subdirectory(rquota)
+-add_subdirectory(lib)
+-
+ include(CMakePackageConfigHelpers)
+ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/libnfs-config-version.cmake
+                                  VERSION ${PROJECT_VERSION}
+diff --git a/cmake/Macros.cmake b/cmake/Macros.cmake
+index 8b940dc8..1977d618 100644
+--- a/cmake/Macros.cmake
++++ b/cmake/Macros.cmake
+@@ -5,11 +5,11 @@
+ #   SOURCES the sources of the library
+ #   HEADERS the headers of the library (only for IDE support)
+ # On return:
+-#   Library will be built and added to ${core_DEPENDS}
++#   Library will be built and added to ${CORE_LIBRARIES}
+ function(core_add_library name)
+   set(name core_${name})
+   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+   add_library(${name} STATIC ${SOURCES} ${HEADERS})
+   target_include_directories(${name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+-  set(core_DEPENDS ${name} ${core_DEPENDS} CACHE STRING "" FORCE)
++  set(CORE_LIBRARIES "${name};${CORE_LIBRARIES}" CACHE INTERNAL "")
+ endfunction()
+diff --git a/examples/CMakeLists.txt b/examples/CMakeLists.txt
+index f8619001..84755916 100644
+--- a/examples/CMakeLists.txt
++++ b/examples/CMakeLists.txt
+@@ -1,11 +1,10 @@
+ find_library(TALLOC_LIBRARY talloc)
+ find_library(TALLOC_EVENT_LIBRARY tevent)
+ find_library(EVENT_LIBARY event)
+-find_library(POPT_LIBRARY popt)
+ 
+-list(APPEND CORE_LIBRARIES ${POPT_LIBRARY})
++set(EXTRA_LIBRARIES "")
+ 
+-set(SOURCES nfsclient-async
++set(EXAMPLES nfsclient-async
+             nfsclient-raw
+             nfsclient-sync
+             nfsclient-bcast
+@@ -15,20 +14,17 @@ set(SOURCES nfsclient-async
+             portmap-client)
+ 
+ if(HAVE_TALLOC_TEVENT)
+-  list(APPEND SOURCES nfs4-cat-talloc)
+-  list(APPEND CORE_LIBRARIES ${TALLOC_EVENT_LIBRARY} ${TALLOC_LIBRARY})
++  list(APPEND EXAMPLES nfs4-cat-talloc)
++  list(APPEND EXTRA_LIBRARIES ${TALLOC_EVENT_LIBRARY} ${TALLOC_LIBRARY})
+ endif()
+ 
+ if(EVENT_LIBARY)
+-  list(APPEND SOURCES nfs4-cat
+-                      portmap-server)
+-  list(APPEND CORE_LIBRARIES ${EVENT_LIBARY})
++  list(APPEND EXAMPLES nfs4-cat
++                       portmap-server)
++  list(APPEND EXTRA_LIBRARIES ${EVENT_LIBARY})
+ endif()
+ 
+-foreach(TARGET ${SOURCES})
++foreach(TARGET ${EXAMPLES})
+   add_executable(${TARGET} ${TARGET}.c)
+-  target_link_libraries(${TARGET} ${CORE_LIBRARIES})
+-  add_dependencies(${TARGET} nfs)
++  target_link_libraries(${TARGET} nfs ${EXTRA_LIBRARIES})
+ endforeach()
+-
+-add_definitions("-D_U_=__attribute__((unused))")
+diff --git a/examples/portmap-client.c b/examples/portmap-client.c
+index bdc49b6a..03d8b788 100644
+--- a/examples/portmap-client.c
++++ b/examples/portmap-client.c
+@@ -36,11 +36,24 @@ WSADATA wsaData;
+ #include <netinet/in.h>
+ #endif
+ 
++#ifdef HAVE_NETDB_H
+ #include <netdb.h>
++#endif
++
+ #include <stdio.h>
++
++#ifdef HAVE_STDLIB_H
+ #include <stdlib.h>
++#endif
++
++#ifdef HAVE_STRING_H
+ #include <string.h>
++#endif
++
++#ifdef HAVE_SYS_SOCKET_H
+ #include <sys/socket.h>
++#endif
++
+ #include <time.h>
+ #include "libnfs.h"
+ #include "libnfs-raw.h"
+diff --git a/include/nfsc/libnfs.h b/include/nfsc/libnfs.h
+index 063d554e..2bd0c7e9 100755
+--- a/include/nfsc/libnfs.h
++++ b/include/nfsc/libnfs.h
+@@ -52,7 +52,7 @@ struct nfs_url {
+ 	char *file;
+ };
+ 
+-#if defined(WIN32)
++#if defined(WIN32) && defined(nfs_EXPORTS)
+ #define EXTERN __declspec( dllexport )
+ #else
+ #ifndef EXTERN
+diff --git a/include/win32/win32_compat.h b/include/win32/win32_compat.h
+index 8ca1379d..d57d35cf 100755
+--- a/include/win32/win32_compat.h
++++ b/include/win32/win32_compat.h
+@@ -133,7 +133,7 @@ struct pollfd {
+ 
+ /* Wrapper macros to call misc. functions win32 is missing */
+ #define poll(x, y, z)        win32_poll(x, y, z)
+-#define snprintf             sprintf_s
++//#define snprintf             sprintf_s
+ #define inet_pton(x,y,z)     win32_inet_pton(x,y,z)
+ #define open(x, y, z)        _open(x, y, z)
+ #ifndef lseek
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 5b77754f..b72c8f83 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -1,20 +1,17 @@
+-set(SOURCES init.c
+-            libnfs.c
+-            libnfs-sync.c
+-            libnfs-zdr.c
+-            nfs_v3.c
+-            nfs_v4.c
+-            pdu.c
+-            socket.c)
++add_library(nfs init.c
++                libnfs.c
++                libnfs-sync.c
++                libnfs-zdr.c
++                nfs_v3.c
++                nfs_v4.c
++                pdu.c
++                socket.c)
+ 
+-add_library(nfs ${SOURCES})
+-target_link_libraries(nfs PUBLIC ${core_DEPENDS})
+ target_include_directories(nfs PUBLIC ../include)
++target_link_libraries(nfs PUBLIC ${CORE_LIBRARIES} ${SYSTEM_LIBRARIES})
+ set_target_properties(nfs PROPERTIES
+                           VERSION ${PROJECT_VERSION}
+                           SOVERSION ${SOVERSION})
+-add_dependencies(nfs ${core_DEPENDS})
+-add_definitions("-D_U_=__attribute__((unused))")
+ 
+ install(TARGETS nfs EXPORT nfs
+                     RUNTIME DESTINATION bin
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 39cda0ed..2f740257 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -1,45 +1,43 @@
+ find_library(DL_LIBRARY dl)
+ 
+-set(SOURCES prog_access
+-            prog_access2
+-            prog_chmod
+-            prog_chown
+-            prog_create
+-            prog_fchmod
+-            prog_fchown
+-            prog_fstat
+-            prog_ftruncate
+-            prog_lchmod
+-            prog_lchown
+-            prog_link
+-            prog_lseek
+-            prog_lstat
+-            prog_mkdir
+-            prog_mknod
+-            prog_mount
+-            prog_open_read
+-            prog_open_write
+-            prog_opendir
+-            prog_rename
+-            prog_rmdir
+-            prog_stat
+-            prog_statvfs
+-            prog_symlink
+-            prog_timeout
+-            prog_truncate
+-            prog_unlink
+-            prog_utimes)
++set(TEST_PROGS prog_access
++               prog_access2
++               prog_chmod
++               prog_chown
++               prog_create
++               prog_fchmod
++               prog_fchown
++               prog_fstat
++               prog_ftruncate
++               prog_lchmod
++               prog_lchown
++               prog_link
++               prog_lseek
++               prog_lstat
++               prog_mkdir
++               prog_mknod
++               prog_mount
++               prog_open_read
++               prog_open_write
++               prog_opendir
++               prog_rename
++               prog_rmdir
++               prog_stat
++               prog_statvfs
++               prog_symlink
++               prog_timeout
++               prog_truncate
++               prog_unlink
++               prog_utimes)
+ 
+-foreach(TARGET ${SOURCES})
++foreach(TARGET ${TEST_PROGS})
+   add_executable(${TARGET} ${TARGET}.c)
+-  target_link_libraries(${TARGET} ${CORE_LIBRARIES})
+-  add_dependencies(${TARGET} nfs)
++  target_link_libraries(${TARGET} nfs)
+ endforeach()
+ 
+ add_library(ld_timeout SHARED ld_timeout.c)
+ set_target_properties(ld_timeout PROPERTIES PREFIX "")
+-target_link_libraries(ld_timeout ${CORE_LIBRARIES} ${DL_LIBRARY})
+-add_dependencies(ld_timeout nfs)
++target_link_libraries(ld_timeout nfs ${DL_LIBRARY})
+ 
+ file(GLOB TESTS test_*.sh)
+ 
+@@ -51,5 +49,3 @@ foreach(TEST ${TESTS})
+            COMMAND ${TEST}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+ endforeach()
+-
+-add_definitions("-D_U_=__attribute__((unused))")
+diff --git a/utils/CMakeLists.txt b/utils/CMakeLists.txt
+index 4f04899f..1f8a8505 100644
+--- a/utils/CMakeLists.txt
++++ b/utils/CMakeLists.txt
+@@ -1,16 +1,10 @@
+-list(APPEND CORE_LIBRARIES ${SOCKET_LIBRARY})
+-
+-set(SOURCES nfs-cat
+-            nfs-ls)
++set(UTILITIES nfs-cat nfs-ls)
+ 
+ if(NOT CMAKE_SYSTEM_NAME STREQUAL Windows)
+-  list(APPEND SOURCES nfs-cp)
++  list(APPEND UTILITIES nfs-cp)
+ endif()
+ 
+-foreach(TARGET ${SOURCES})
++foreach(TARGET ${UTILITIES})
+   add_executable(${TARGET} ${TARGET}.c)
+-  target_link_libraries(${TARGET} ${CORE_LIBRARIES})
+-  add_dependencies(${TARGET} nfs)
++  target_link_libraries(${TARGET} nfs)
+ endforeach()
+-
+-add_definitions("-D_U_=__attribute__((unused))")
+diff --git a/win32/CMakeLists.txt b/win32/CMakeLists.txt
+index c12a303b..c4edf2a3 100644
+--- a/win32/CMakeLists.txt
++++ b/win32/CMakeLists.txt
+@@ -1,5 +1,5 @@
+ set(SOURCES win32_compat.c)
+-set(HEADERS win32_compat.h
++set(HEADERS ../include/win32/win32_compat.h
+             win32_errnowrapper.h)
+ 
+ core_add_library(win32)
+diff --git a/win32/win32_compat.c b/win32/win32_compat.c
+index 830f9e37..bedeeb47 100644
+--- a/win32/win32_compat.c
++++ b/win32/win32_compat.c
+@@ -132,7 +132,7 @@ int win32_poll(struct pollfd *fds, unsigned int nfds, int timo)
+   {
+     for (i = 0; i < nfds; ++i) 
+     {
+-      int fd = fds[i].fd;
++      SOCKET fd = fds[i].fd;
+       if(fds[i].events & (POLLIN|POLLPRI) && FD_ISSET(fd, &ifds))
+         fds[i].revents |= POLLIN;
+       if(fds[i].events & POLLOUT && FD_ISSET(fd, &ofds))
