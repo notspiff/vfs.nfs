@@ -24,7 +24,7 @@
 #include <string>
 
 #include <kodi/addon-instance/VFS.h>
-#include <p8-platform/threads/mutex.h>
+#include <mutex>
 
 #if defined(TARGET_WINDOWS)
 #define NFSSTAT struct _stat64
@@ -32,7 +32,7 @@
 #define NFSSTAT struct stat
 #endif
 
-class CNFSConnection : public P8PLATFORM::CMutex
+class ATTRIBUTE_HIDDEN CNFSConnection : public std::recursive_mutex
 {
 public:
   struct keepAliveStruct
@@ -45,7 +45,7 @@ public:
   struct contextTimeout
   {
     struct nfs_context *pContext;
-    uint64_t lastAccessedTime;
+    std::chrono::high_resolution_clock::time_point lastAccessedTime;
   };
 
   typedef std::map<std::string, struct contextTimeout> tOpenContextMap;
@@ -93,10 +93,10 @@ private:
   unsigned int m_IdleTimeout;//timeout for idle connection close and dyunload
   tFileKeepAliveMap m_KeepAliveTimeouts;//mapping filehandles to its idle timeout
   tOpenContextMap m_openContextMap;//unique map for tracking all open contexts
-  uint64_t m_lastAccessedTime;//last access time for m_pNfsContext
+  std::chrono::high_resolution_clock::time_point m_lastAccessedTime;//last access time for m_pNfsContext
   std::list<std::string> m_exportList;//list of exported paths of current connected servers
-  P8PLATFORM::CMutex m_keepAliveLock;
-  P8PLATFORM::CMutex m_openContextLock;
+  std::recursive_mutex m_keepAliveLock;
+  std::recursive_mutex m_openContextLock;
 
   void clearMembers();
   struct nfs_context *getContextFromMap(const std::string& exportname, bool forceCacheHit = false);

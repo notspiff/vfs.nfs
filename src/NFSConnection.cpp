@@ -27,8 +27,7 @@ extern "C"
 #include <nfsc/libnfs-raw-mount.h>
 }
 
-#include <p8-platform/util/timeutils.h>
-
+#include <chrono>
 #include <kodi/Filesystem.h>
 #include <kodi/General.h>
 #include <kodi/Network.h>
@@ -63,7 +62,6 @@ CNFSConnection::CNFSConnection()
 , m_writeChunkSize(0)
 , m_OpenConnections(0)
 , m_IdleTimeout(0)
-, m_lastAccessedTime(0)
 {
 }
 
@@ -115,44 +113,46 @@ void CNFSConnection::clearMembers()
 
 void CNFSConnection::destroyOpenContexts()
 {
-  m_openContextLock.Lock();
+  m_openContextLock.lock();
   for (const auto& entry : m_openContextMap)
   {
     nfs_destroy_context(entry.second.pContext);
   }
   m_openContextMap.clear();
-  m_openContextLock.Unlock();
+  m_openContextLock.unlock();
 }
 
 void CNFSConnection::destroyContext(const std::string& exportName)
 {
-  m_openContextLock.Lock();
+  m_openContextLock.lock();
   auto it = m_openContextMap.find(exportName);
   if (it != m_openContextMap.end())
   {
     nfs_destroy_context(it->second.pContext);
     m_openContextMap.erase(it);
   }
-  m_openContextLock.Unlock();
+  m_openContextLock.unlock();
 }
 
 struct nfs_context *CNFSConnection::getContextFromMap(const std::string& exportname, bool forceCacheHit/* = false*/)
 {
   struct nfs_context *pRet = nullptr;
-  m_openContextLock.Lock();
+  m_openContextLock.lock();
 
   auto it = m_openContextMap.find(exportname);
   if(it != m_openContextMap.end())
   {
     //check if context has timed out already
-    uint64_t now = P8PLATFORM::GetTimeMs();
-    if((now - it->second.lastAccessedTime) < CONTEXT_TIMEOUT || forceCacheHit)
+    std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+    if(static_cast<long>(std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second.lastAccessedTime).count()) < CONTEXT_TIMEOUT ||
+       forceCacheHit)
     {
       //its not timedout yet or caller wants the cached entry regardless of timeout
       //refresh access time of that
       //context and return it
       if (!forceCacheHit) // only log it if this isn't the resetkeepalive on each read ;)
-        kodi::Log(ADDON_LOG_DEBUG, "NFS: Refreshing context for %s, old: %" PRId64 ", new: %" PRId64, exportname.c_str(), it->second.lastAccessedTime, now);
+        kodi::Log(ADDON_LOG_DEBUG, "NFS: Refreshing context for %s, old: %" PRId64 ", new: %" PRId64,
+                  exportname.c_str(), it->second.lastAccessedTime, now);
       it->second.lastAccessedTime = now;
       pRet = it->second.pContext;
     }
@@ -165,7 +165,7 @@ struct nfs_context *CNFSConnection::getContextFromMap(const std::string& exportn
       m_openContextMap.erase(it);
     }
   }
-  m_openContextLock.Unlock();
+  m_openContextLock.unlock();
   return pRet;
 }
 
@@ -189,12 +189,12 @@ int CNFSConnection::getContextForExport(const std::string& exportname)
     else
     {
       struct contextTimeout tmp;
-      m_openContextLock.Lock();
+      m_openContextLock.lock();
       tmp.pContext = m_pNfsContext;
-      tmp.lastAccessedTime = P8PLATFORM::GetTimeMs();
+      tmp.lastAccessedTime = std::chrono::high_resolution_clock::now();
       m_openContextMap[exportname] = tmp; //add context to list of all contexts
       ret = CONTEXT_NEW;
-      m_openContextLock.Unlock();
+      m_openContextLock.unlock();
     }
   }
   else
@@ -202,7 +202,7 @@ int CNFSConnection::getContextForExport(const std::string& exportname)
     ret = CONTEXT_CACHED;
     kodi::Log(ADDON_LOG_DEBUG,"NFS: Using cached context.");
   }
-  m_lastAccessedTime = P8PLATFORM::GetTimeMs(); //refresh last access time of m_pNfsContext
+  m_lastAccessedTime = std::chrono::high_resolution_clock::now(); //refresh last access time of m_pNfsContext
 
   return ret;
 }
@@ -260,16 +260,17 @@ bool CNFSConnection::splitUrlIntoExportAndPath(const std::string& hostname,
 
 bool CNFSConnection::Connect(const VFSURL& url, std::string& relativePath)
 {
-  P8PLATFORM::CLockObject lock(*this);
+  std::unique_lock<std::recursive_mutex> lock(*this);
   int nfsRet = 0;
   std::string exportPath;
 
   resolveHost(url.hostname);
   bool ret = splitUrlIntoExportAndPath(url.hostname, url.filename, exportPath, relativePath);
 
+  std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
   if( (ret && (exportPath != m_exportPath  ||
       m_hostName != url.hostname))    ||
-      (P8PLATFORM::GetTimeMs() - m_lastAccessedTime) > CONTEXT_TIMEOUT )
+      static_cast<long>(std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastAccessedTime).count()) > CONTEXT_TIMEOUT)
   {
     int contextRet = getContextForExport(std::string(url.hostname) + exportPath);
 
@@ -325,7 +326,7 @@ void CNFSConnection::CheckIfIdle()
    worst case scenario is that m_OpenConnections could read 0 and then changed to 1 if this happens it will enter the if wich will lead to another check, wich is locked.  */
   if (m_OpenConnections == 0 && m_pNfsContext != nullptr)
   { /* I've set the the maximum IDLE time to be 1 min and 30 sec. */
-    P8PLATFORM::CLockObject lock(*this);
+    std::unique_lock<std::recursive_mutex> lock(*this);
     if (m_OpenConnections == 0 /* check again - when locked */)
     {
       if (m_IdleTimeout > 0)
@@ -342,7 +343,7 @@ void CNFSConnection::CheckIfIdle()
 
   if( m_pNfsContext != nullptr )
   {
-    P8PLATFORM::CLockObject lock(m_keepAliveLock);
+    std::unique_lock<std::recursive_mutex> lock(m_keepAliveLock);
     //handle keep alive on opened files
     for (auto& entry : m_KeepAliveTimeouts)
     {
@@ -363,14 +364,14 @@ void CNFSConnection::CheckIfIdle()
 //remove file handle from keep alive list on file close
 void CNFSConnection::removeFromKeepAliveList(struct nfsfh  *_pFileHandle)
 {
-  P8PLATFORM::CLockObject lock(m_keepAliveLock);
+  std::unique_lock<std::recursive_mutex> lock(m_keepAliveLock);
   m_KeepAliveTimeouts.erase(_pFileHandle);
 }
 
 //reset timeouts on read
 void CNFSConnection::resetKeepAlive(std::string _exportPath, struct nfsfh  *_pFileHandle)
 {
-  P8PLATFORM::CLockObject lock(m_keepAliveLock);
+  std::unique_lock<std::recursive_mutex> lock(m_keepAliveLock);
   //refresh last access time of the context aswell
   struct nfs_context *pContext = getContextFromMap(_exportPath, true);
 
@@ -378,7 +379,7 @@ void CNFSConnection::resetKeepAlive(std::string _exportPath, struct nfsfh  *_pFi
   // its last access time too here
   if (m_pNfsContext == pContext)
   {
-    m_lastAccessedTime = P8PLATFORM::GetTimeMs();
+    m_lastAccessedTime = std::chrono::high_resolution_clock::now();
   }
 
   //adds new keys - refreshs existing ones
@@ -403,7 +404,7 @@ void CNFSConnection::keepAlive(std::string _exportPath, struct nfsfh  *_pFileHan
     pContext = m_pNfsContext;
 
   kodi::Log(ADDON_LOG_NOTICE, "NFS: sending keep alive after %i s.", KEEP_ALIVE_TIMEOUT/2);
-  P8PLATFORM::CLockObject lock(*this);
+  std::unique_lock<std::recursive_mutex> lock(*this);
   nfs_lseek(pContext, _pFileHandle, 0, SEEK_CUR, &offset);
   nfs_read(pContext, _pFileHandle, 32, buffer);
   nfs_lseek(pContext, _pFileHandle, offset, SEEK_SET, &offset);
@@ -411,7 +412,7 @@ void CNFSConnection::keepAlive(std::string _exportPath, struct nfsfh  *_pFileHan
 
 int CNFSConnection::stat(const VFSURL& url, NFSSTAT *statbuff)
 {
-  P8PLATFORM::CLockObject lock(*this);
+  std::unique_lock<std::recursive_mutex> lock(*this);
   int nfsRet = 0;
   std::string exportPath;
   std::string relativePath;
@@ -450,13 +451,13 @@ int CNFSConnection::stat(const VFSURL& url, NFSSTAT *statbuff)
 needed for unloading the dylib*/
 void CNFSConnection::AddActiveConnection()
 {
-  P8PLATFORM::CLockObject lock(*this);
+  std::unique_lock<std::recursive_mutex> lock(*this);
   m_OpenConnections++;
 }
 
 void CNFSConnection::AddIdleConnection()
 {
-  P8PLATFORM::CLockObject lock(*this);
+  std::unique_lock<std::recursive_mutex> lock(*this);
   m_OpenConnections--;
   /* If we close a file we reset the idle timer so that we don't have any wierd behaviours if a user
    leaves the movie paused for a long while and then press stop */

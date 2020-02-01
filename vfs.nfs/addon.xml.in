@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon
   id="vfs.nfs"
-  version="1.1.0"
+  version="2.0.0"
   name="NFS support"
   provider-name="spiff">
   <requires>@ADDON_DEPENDS@</requires>
@@ -12,8 +12,10 @@
     directories="true"
     library_@PLATFORM@="@LIBRARY_FILENAME@" />
   <extension point="xbmc.addon.metadata">
-    <summary lang="en">NFS support</summary>
-    <description lang="en">NFS support</description>
+    <summary lang="en_GB">Network File System support</summary>
+    <description lang="en_GB">Client for accessing NFS shares over a network.
+
+The Network File System (NFS, also known as Network File Service), is a protocol developed by Sun Microsystems that enables access to files via a network.</description>
     <platform>@PLATFORM@</platform>
   </extension>
 </addon>

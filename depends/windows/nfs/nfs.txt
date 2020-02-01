@@ -1,1 +1,1 @@
-nfs http://mirrors.kodi.tv/build-deps/sources/libnfs-2.0.0.tar.gz
+nfs https://github.com/sahlberg/libnfs/archive/libnfs-4.0.0.tar.gz

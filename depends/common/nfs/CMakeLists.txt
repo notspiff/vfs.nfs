@@ -4,13 +4,13 @@ project(nfs)
 include(ExternalProject)
 externalproject_add(nfs
                     SOURCE_DIR ${CMAKE_SOURCE_DIR}
-                    UPDATE_COMMAND ./bootstrap WORKING_DIRECTORY <SOURCE_DIR>
+                    UPDATE_COMMAND <SOURCE_DIR>/bootstrap
                     CONFIGURE_COMMAND <SOURCE_DIR>/configure
                       --prefix=${OUTPUT_DIR}
                       --enable-static
                       --disable-shared
-                      --disable-werror
-                      CFLAGS=-fPIC
+                      --with-pic
+                      ${EXTRA_CFLAGS}
                     INSTALL_COMMAND ""
                     BUILD_IN_SOURCE 1)
 
