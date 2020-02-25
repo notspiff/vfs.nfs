@@ -1,0 +1,24 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -34,7 +34,7 @@ set(SYSTEM_LIBRARIES "")
+ # list of core (static) libraries built in current configuration (used by lib/CMakeLists.txt)
+ set(CORE_LIBRARIES "" CACHE INTERNAL "")
+ 
+-if(CMAKE_SYSTEM_NAME STREQUAL Windows)
++if(CMAKE_SYSTEM_NAME STREQUAL Windows OR CMAKE_SYSTEM_NAME STREQUAL WindowsStore)
+   add_definitions("-D_U_=" -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
+   list(APPEND SYSTEM_LIBRARIES ws2_32)
+   add_subdirectory(win32)
+--- a/include/nfsc/libnfs.h
++++ b/include/nfsc/libnfs.h
+@@ -30,6 +30,10 @@
+ #else
+ #include <time.h>
+ #endif
++#ifdef _WIN32
++#include <Winsock2.h>
++struct timeval;
++#endif
+ 
+ #ifdef __cplusplus
+ extern "C" {

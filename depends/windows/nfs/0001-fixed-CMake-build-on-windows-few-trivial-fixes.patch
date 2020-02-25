@@ -1,24 +1,3 @@
-From 6564abaa1f979c0b62044f695030a32b60620163 Mon Sep 17 00:00:00 2001
-From: crusader-mike <crusader.mike@gmail.com>
-Date: Thu, 12 Sep 2019 15:07:35 -0500
-Subject: [PATCH] fixed CMake build on windows, few trivial fixes
-
----
- CMakeLists.txt               | 33 +++++++++--------
- cmake/Macros.cmake           |  4 +--
- examples/CMakeLists.txt      | 22 +++++-------
- examples/portmap-client.c    | 13 +++++++
- include/nfsc/libnfs.h        |  2 +-
- include/win32/win32_compat.h |  2 +-
- lib/CMakeLists.txt           | 21 +++++------
- tests/CMakeLists.txt         | 68 +++++++++++++++++-------------------
- utils/CMakeLists.txt         | 14 +++-----
- win32/CMakeLists.txt         |  2 +-
- win32/win32_compat.c         |  2 +-
- 11 files changed, 92 insertions(+), 91 deletions(-)
-
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 3a17fe46..f1edbc60 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.2)
@@ -86,8 +65,6 @@ index 3a17fe46..f1edbc60 100644
  include(CMakePackageConfigHelpers)
  write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/libnfs-config-version.cmake
                                   VERSION ${PROJECT_VERSION}
-diff --git a/cmake/Macros.cmake b/cmake/Macros.cmake
-index 8b940dc8..1977d618 100644
 --- a/cmake/Macros.cmake
 +++ b/cmake/Macros.cmake
 @@ -5,11 +5,11 @@
@@ -104,8 +81,6 @@ index 8b940dc8..1977d618 100644
 -  set(core_DEPENDS ${name} ${core_DEPENDS} CACHE STRING "" FORCE)
 +  set(CORE_LIBRARIES "${name};${CORE_LIBRARIES}" CACHE INTERNAL "")
  endfunction()
-diff --git a/examples/CMakeLists.txt b/examples/CMakeLists.txt
-index f8619001..84755916 100644
 --- a/examples/CMakeLists.txt
 +++ b/examples/CMakeLists.txt
 @@ -1,11 +1,10 @@
@@ -150,8 +125,6 @@ index f8619001..84755916 100644
  endforeach()
 -
 -add_definitions("-D_U_=__attribute__((unused))")
-diff --git a/examples/portmap-client.c b/examples/portmap-client.c
-index bdc49b6a..03d8b788 100644
 --- a/examples/portmap-client.c
 +++ b/examples/portmap-client.c
 @@ -36,11 +36,24 @@ WSADATA wsaData;
@@ -179,11 +152,9 @@ index bdc49b6a..03d8b788 100644
  #include <time.h>
  #include "libnfs.h"
  #include "libnfs-raw.h"
-diff --git a/include/nfsc/libnfs.h b/include/nfsc/libnfs.h
-index 063d554e..2bd0c7e9 100755
 --- a/include/nfsc/libnfs.h
 +++ b/include/nfsc/libnfs.h
-@@ -52,7 +52,7 @@ struct nfs_url {
+@@ -50,7 +50,7 @@ struct nfs_url {
  	char *file;
  };
  
@@ -192,8 +163,6 @@ index 063d554e..2bd0c7e9 100755
  #define EXTERN __declspec( dllexport )
  #else
  #ifndef EXTERN
-diff --git a/include/win32/win32_compat.h b/include/win32/win32_compat.h
-index 8ca1379d..d57d35cf 100755
 --- a/include/win32/win32_compat.h
 +++ b/include/win32/win32_compat.h
 @@ -133,7 +133,7 @@ struct pollfd {
@@ -205,8 +174,6 @@ index 8ca1379d..d57d35cf 100755
  #define inet_pton(x,y,z)     win32_inet_pton(x,y,z)
  #define open(x, y, z)        _open(x, y, z)
  #ifndef lseek
-diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
-index 5b77754f..b72c8f83 100644
 --- a/lib/CMakeLists.txt
 +++ b/lib/CMakeLists.txt
 @@ -1,20 +1,17 @@
@@ -239,8 +206,6 @@ index 5b77754f..b72c8f83 100644
  
  install(TARGETS nfs EXPORT nfs
                      RUNTIME DESTINATION bin
-diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
-index 39cda0ed..2f740257 100644
 --- a/tests/CMakeLists.txt
 +++ b/tests/CMakeLists.txt
 @@ -1,45 +1,43 @@
@@ -327,8 +292,6 @@ index 39cda0ed..2f740257 100644
  endforeach()
 -
 -add_definitions("-D_U_=__attribute__((unused))")
-diff --git a/utils/CMakeLists.txt b/utils/CMakeLists.txt
-index 4f04899f..1f8a8505 100644
 --- a/utils/CMakeLists.txt
 +++ b/utils/CMakeLists.txt
 @@ -1,16 +1,10 @@
@@ -352,8 +315,6 @@ index 4f04899f..1f8a8505 100644
  endforeach()
 -
 -add_definitions("-D_U_=__attribute__((unused))")
-diff --git a/win32/CMakeLists.txt b/win32/CMakeLists.txt
-index c12a303b..c4edf2a3 100644
 --- a/win32/CMakeLists.txt
 +++ b/win32/CMakeLists.txt
 @@ -1,5 +1,5 @@
@@ -363,8 +324,6 @@ index c12a303b..c4edf2a3 100644
              win32_errnowrapper.h)
  
  core_add_library(win32)
-diff --git a/win32/win32_compat.c b/win32/win32_compat.c
-index 830f9e37..bedeeb47 100644
 --- a/win32/win32_compat.c
 +++ b/win32/win32_compat.c
 @@ -132,7 +132,7 @@ int win32_poll(struct pollfd *fds, unsigned int nfds, int timo)
@@ -376,3 +335,4 @@ index 830f9e37..bedeeb47 100644
        if(fds[i].events & (POLLIN|POLLPRI) && FD_ISSET(fd, &ifds))
          fds[i].revents |= POLLIN;
        if(fds[i].events & POLLOUT && FD_ISSET(fd, &ofds))
+

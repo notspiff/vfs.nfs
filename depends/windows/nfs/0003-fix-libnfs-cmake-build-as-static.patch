@@ -1,0 +1,11 @@
+--- a/cmake/Macros.cmake
++++ b/cmake/Macros.cmake
+@@ -9,7 +9,7 @@
+ function(core_add_library name)
+   set(name core_${name})
+   set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+-  add_library(${name} STATIC ${SOURCES} ${HEADERS})
++  add_library(${name} OBJECT ${SOURCES} ${HEADERS})
+   target_include_directories(${name} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+   set(CORE_LIBRARIES "${name};${CORE_LIBRARIES}" CACHE INTERNAL "")
+ endfunction()
