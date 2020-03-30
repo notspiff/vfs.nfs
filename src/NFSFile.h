@@ -61,7 +61,7 @@ public:
   int64_t GetLength(void* context) override;
   int64_t GetPosition(void* context) override;
   int GetChunkSize(void* context) override {return CNFSConnection::Get().GetMaxReadChunkSize();}
-  int IoControl(void* context, XFILE::EIoControl request, void* param) override;
+  int IoControl(void* context, VFS_IOCTRL request, void* param) override;
   int Stat(const VFSURL& url, struct __stat64* buffer) override;
   bool Close(void* context) override;
   bool Exists(const VFSURL& url) override;
